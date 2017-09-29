@@ -2,17 +2,17 @@
   <v-layout row wrap justify-center id="wrapper">
     <v-flex xs10 class="mt-4">
       <v-card>
-        <v-card-title class="headline">Docs</v-card-title>
-        <!-- <v-divider></v-divider> -->
-        <!-- <v-card-actions class="pt-3 pb-3">
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://vuejs.org/v2/guide/')">Vue</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://electron.atom.io/docs/')">Electron</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://vuetifyjs.com')">Vuetify</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                  </v-card-actions> -->
+        <v-card-title class="headline">驾遇打印记录自助下载器</v-card-title>
+        <v-divider></v-divider>
+        <v-card-actions class="pt-3 pb-3">
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button1</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button2</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button3</v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
       </v-card>
     </v-flex>
   </v-layout>
@@ -22,8 +22,9 @@
 let SSH = require('ssh2')
 let PATH = require('path')
 let FS = require('fs-extra')
+let SCHEDULE = require('node-schedule')
 
-const remoteBasePath = '/data/htdocs/ycbb/Insurance/Public/static/packaged-assets/WX_CarLoan/testp'
+const remoteBasePath = '/data/htdocs/ycbb/Insurance/Public/static/packaged-assets/WX_CarLoan/testp/static'
 const localBasePath = PATH.resolve('./.load')
 
 export default {
@@ -36,7 +37,7 @@ export default {
         host: '182.254.240.237',
         port: 22,
         username: 'ubuntu',
-        password: 'qrVCeAtkc4keji'
+        password: 'rVCeAtkc4kejiq'
       },
       mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录or文件
         file: 33204,
@@ -50,10 +51,8 @@ export default {
     }
   },
   mounted() {
-    let timeRange = this.toGetTimeRange(0)
-    this.timeBegin = timeRange[0]
-    this.timeEnd = timeRange[1]
-    this.init()
+    // this.init()
+    SCHEDULE.scheduleJob('0 10 19 * * *', () => this.init()) // 每天下午 19:10 定时任务开启
   },
   methods: {
     log_sucs: filename => console.log('%c%s', 'color: green', 'Log :: download success!', '文件名:', filename, ',创建时间:', new Date().toLocaleString()),
@@ -100,16 +99,16 @@ export default {
 
       let mTime = this.f_time(mtime, 1000)
       // resolve('debug!')
-      if (this.is_time_range(mTime)) {
-        this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
-          if (err) throw err
+      // if (this.is_time_range(mTime)) {
+      this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
+        if (err) throw err
 
-          resolve && resolve('success!')
-          this.log_sucs(mTime + filename)
-        })
-      } else {
         resolve && resolve('success!')
-      }
+        this.log_sucs(mTime + filename)
+      })
+      // } else {
+      // resolve && resolve('success!')
+      // }
     },
     * request(filelist, parent) {
       for (let i = 0; i < filelist.length; ++i) {
@@ -140,6 +139,9 @@ export default {
     },
     init() {
       let Client = new SSH.Client()
+      let timeRange = this.toGetTimeRange(0)
+      this.timeBegin = timeRange[0]
+      this.timeEnd = timeRange[1]
 
       Client.on('ready', () => {
         console.info('Log :: ready...')

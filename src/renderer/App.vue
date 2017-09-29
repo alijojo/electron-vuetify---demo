@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <v-app dark>
-      <v-navigation-drawer persistent :mini-variant="miniVariant" :clipped="clipped" v-model="drawer">
+       <!-- <v-navigation-drawer persistent :mini-variant="miniVariant" :clipped="clipped" v-model="drawer">
         <v-list>
           <v-list-tile router :to="item.to" :key="i" v-for="(item, i) in items" exact>
             <v-list-tile-action>
@@ -29,7 +29,7 @@
         <v-btn icon @click.native.stop="rightDrawer = !rightDrawer">
           <v-icon>menu</v-icon>
         </v-btn>
-      </v-toolbar>
+      </v-toolbar> -->
       <main>
         <v-container fluid fill-height>
           <v-slide-y-transition mode="out-in">
@@ -37,7 +37,7 @@
           </v-slide-y-transition>
         </v-container>
       </main>
-      <v-navigation-drawer temporary :right="right" v-model="rightDrawer">
+      <!-- <v-navigation-drawer temporary :right="right" v-model="rightDrawer">
         <v-list>
           <v-list-tile @click.native="right = !right">
             <v-list-tile-action>
@@ -50,7 +50,7 @@
       <v-footer :fixed="fixed">
         <v-spacer></v-spacer>
         <span>&copy; 2017</span>
-      </v-footer>
+      </v-footer> -->
     </v-app>
   </div>
 </template>
