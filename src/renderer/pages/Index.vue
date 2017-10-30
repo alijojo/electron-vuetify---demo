@@ -37,7 +37,7 @@ export default {
         host: '182.254.240.237',
         port: 22,
         username: 'ubuntu',
-        password: 'rVCeAtkc4kejiq'
+        password: '******'
       },
       mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录or文件
         file: 33204,
