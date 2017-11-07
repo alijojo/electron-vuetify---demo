@@ -2,17 +2,20 @@
   <v-layout row wrap justify-center id="wrapper">
     <v-flex xs10 class="mt-4">
       <v-card>
-        <v-card-title class="headline">Docs</v-card-title>
-        <!-- <v-divider></v-divider> -->
-        <!-- <v-card-actions class="pt-3 pb-3">
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://vuejs.org/v2/guide/')">Vue</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://electron.atom.io/docs/')">Electron</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                    <v-btn class="link-btn" @click="open('https://vuetifyjs.com')">Vuetify</v-btn>
-                                                                                    <v-spacer></v-spacer>
-                                                                                  </v-card-actions> -->
+        <v-card-title class="headline">XX</v-card-title>
+        <v-divider></v-divider>
+        <v-card-actions class="pt-3 pb-3">
+          <v-spacer></v-spacer>
+          <!-- <v-btn class="link-btn">button1</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn class="link-btn">button2</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn class="link-btn">button3</v-btn> -->
+          <div>
+            <template v-for="(log, index) of logs">{{ log }}<br/></template>
+          </div>
+          <v-spacer></v-spacer>
+        </v-card-actions>
       </v-card>
     </v-flex>
   </v-layout>
@@ -22,25 +25,26 @@
 let SSH = require('ssh2')
 let PATH = require('path')
 let FS = require('fs-extra')
+let SCHEDULE = require('node-schedule')
+let DATE_FORMAT = require('dateformat')
 
-const remoteBasePath = '/data/htdocs/ycbb/Insurance/Public/static/packaged-assets/WX_CarLoan/testp'
-const localBasePath = PATH.resolve('./.load')
+window.DATE_FORMAT = DATE_FORMAT
+
+let localBasePath = ''
+const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
+const hostInfo = require('../../../config')
 
 export default {
   name: 'index',
   data() {
     return {
-      // remoteBasePath,
-      // localBasePath,
-      hostInfo: {
-        host: '182.254.240.237',
-        port: 22,
-        username: 'ubuntu',
-        password: 'qrVCeAtkc4keji'
-      },
-      mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录or文件
-        file: 33204,
-        folder: 16893
+      hostInfo,
+      logs: [], // 存放日志信息
+      mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录 或 文件
+        // file: 33204,
+        // folder: 16893
+        file: 33188,
+        folder: 16895
       },
       sftp: null,
       mainRun: null, // 主线程
@@ -50,25 +54,12 @@ export default {
     }
   },
   mounted() {
-    let timeRange = this.toGetTimeRange(0)
-    this.timeBegin = timeRange[0]
-    this.timeEnd = timeRange[1]
-    this.init()
+    // this.init()
+    SCHEDULE.scheduleJob('0 10 19 * * *', () => this.init()) // 每天下午 19:10 定时任务开启
   },
   methods: {
     log_sucs: filename => console.log('%c%s', 'color: green', 'Log :: download success!', '文件名:', filename, ',创建时间:', new Date().toLocaleString()),
-    prefix_integer: (num, n) => (Array(n).join(0) + num).slice(-n), // 对任意数字进行补 0
-    f_time(timestamp, ratio = 1) {
-      return this.date_fill_zero(new Date(timestamp * ratio).toLocaleString())
-    },
-    date_fill_zero(date) { // 对不满两位数日期补 0
-      let temp = date.split(' ')
-      date = temp[0].split('-')
-
-      date[1] = this.prefix_integer(date[1], 2)
-      date[2] = this.prefix_integer(date[2], 2)
-      return date.join('-') + ' ' + temp[1]
-    },
+    f_time: (timestamp, ratio = 1) => DATE_FORMAT(new Date(timestamp * ratio).toLocaleString(), 'yyyy-mm-dd HH:MM:ss'),
     toGetTimeRange(startDay, endDay = 1) {
       const end = new Date()
       const start = new Date()
@@ -77,8 +68,8 @@ export default {
 
       const formatPicker = (s, r, t = '-') => s.toLocaleDateString().replace(/\//g, t) + (r ? ' 00:00:00' : ' 19:00:59')
       return [
-        this.date_fill_zero(formatPicker(new Date(start), true)),
-        this.date_fill_zero(formatPicker(end, false))
+        DATE_FORMAT(new Date(start), 'yyyy-mm-dd HH:MM:ss'),
+        DATE_FORMAT(end, 'yyyy-mm-dd HH:MM:ss')
       ]
     },
     is_time_range(time) { // 时间范围判断
@@ -102,10 +93,12 @@ export default {
       // resolve('debug!')
       if (this.is_time_range(mTime)) {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
+          resolve && resolve('success!')
+
           if (err) throw err
 
-          resolve && resolve('success!')
-          this.log_sucs(mTime + filename)
+          this.log_sucs(filename)
+          // this.log_sucs(mTime + filename)
         })
       } else {
         resolve && resolve('success!')
@@ -121,8 +114,18 @@ export default {
       }
     },
     req(filelist, parent) {
+      // new Promise(resolve => this.add_queue(filelist, parent, resolve))
+      //   .then(data => parent === '' ? this.mainRun.next(data) : this.childRun[parent].next(data))
+      //   .catch(err => console.error(err))
       new Promise(resolve => this.add_queue(filelist, parent, resolve))
-        .then(data => parent === '' ? this.mainRun.next(data) : this.childRun[parent].next(data))
+        .then(data => {
+          // this.logs.unshift(this.childRun[parent])
+          // console.warn(filelist, parent)
+          if (parent === '')
+            this.mainRun.next(data)
+          else
+            this.childRun[parent].next(data)
+        })
         .catch(err => console.error(err))
     },
     download(path = '') {
@@ -140,6 +143,10 @@ export default {
     },
     init() {
       let Client = new SSH.Client()
+      let timeRange = this.toGetTimeRange(-1, 0)
+      this.timeBegin = timeRange[0]
+      this.timeEnd = timeRange[1]
+      localBasePath = PATH.resolve('F:\\统计数据\\' + timeRange[0].split(' ')[0]) // 根据今天日期生成目录
 
       Client.on('ready', () => {
         console.info('Log :: ready...')

@@ -1909,6 +1909,13 @@ create-hmac@^1.1.0, create-hmac@^1.1.2, create-hmac@^1.1.4:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
+cron-parser@^2.4.0:
+  version "2.4.1"
+  resolved "http://registry.npm.taobao.org/cron-parser/download/cron-parser-2.4.1.tgz#022befce1af293e4d3144ff04c2cbd2edb491271"
+  dependencies:
+    is-nan "^1.2.1"
+    moment-timezone "^0.5.0"
+
 cross-env@^5.0.5:
   version "5.0.5"
   resolved "http://registry.npm.taobao.org/cross-env/download/cross-env-5.0.5.tgz#4383d364d9660873dd185b398af3bfef5efffef3"
@@ -2081,6 +2088,10 @@ date-now@^0.1.4:
   version "0.1.4"
   resolved "http://registry.npm.taobao.org/date-now/download/date-now-0.1.4.tgz#eaf439fd4d4848ad74e5cc7dbef200672b9e345b"
 
+dateformat@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.2.tgz#9a4df4bff158ac2f34bc637abdb15471607e1659"
+
 de-indent@^1.0.2:
   version "1.0.2"
   resolved "http://registry.npm.taobao.org/de-indent/download/de-indent-1.0.2.tgz#b2038e846dc33baa5796128d0804b455b8c1e21d"
@@ -2132,7 +2143,7 @@ default-gateway@^2.2.2:
     execa "^0.7.0"
     ip-regex "^2.1.0"
 
-define-properties@^1.1.2:
+define-properties@^1.1.1, define-properties@^1.1.2:
   version "1.1.2"
   resolved "http://registry.npm.taobao.org/define-properties/download/define-properties-1.1.2.tgz#83a73f2fea569898fb737193c8f873caf6d45c94"
   dependencies:
@@ -3805,6 +3816,12 @@ is-lower-case@^1.1.0:
   dependencies:
     lower-case "^1.1.0"
 
+is-nan@^1.2.1:
+  version "1.2.1"
+  resolved "http://registry.npm.taobao.org/is-nan/download/is-nan-1.2.1.tgz#9faf65b6fb6db24b7f5c0628475ea71f988401e2"
+  dependencies:
+    define-properties "^1.1.1"
+
 is-npm@^1.0.0:
   version "1.0.0"
   resolved "http://registry.npm.taobao.org/is-npm/download/is-npm-1.0.0.tgz#f2fb63a65e4905b406c86072765a1a4dc793b9f4"
@@ -4324,6 +4341,10 @@ loglevel@^1.4.1:
   version "1.5.0"
   resolved "http://registry.npm.taobao.org/loglevel/download/loglevel-1.5.0.tgz#3863984a2c326b986fbb965f378758a6dc8a4324"
 
+long-timeout@0.1.1:
+  version "0.1.1"
+  resolved "http://registry.npm.taobao.org/long-timeout/download/long-timeout-0.1.1.tgz#9721d788b47e0bcb5a24c2e2bee1a0da55dab514"
+
 longest@^1.0.1:
   version "1.0.1"
   resolved "http://registry.npm.taobao.org/longest/download/longest-1.0.1.tgz#30a0b2da38f73770e8294a0d22e6625ed77d0097"
@@ -4522,6 +4543,16 @@ mkdirp@0.5.1, mkdirp@0.5.x, "mkdirp@>=0.5 0", mkdirp@^0.5.1, mkdirp@~0.5.0, mkdi
   dependencies:
     minimist "0.0.8"
 
+moment-timezone@^0.5.0:
+  version "0.5.13"
+  resolved "http://registry.npm.taobao.org/moment-timezone/download/moment-timezone-0.5.13.tgz#99ce5c7d827262eb0f1f702044177f60745d7b90"
+  dependencies:
+    moment ">= 2.9.0"
+
+"moment@>= 2.9.0":
+  version "2.18.1"
+  resolved "http://registry.npm.taobao.org/moment/download/moment-2.18.1.tgz#c36193dd3ce1c2eed2adb7c802dbbc77a81b1c0f"
+
 ms@0.7.1:
   version "0.7.1"
   resolved "http://registry.npm.taobao.org/ms/download/ms-0.7.1.tgz#9cd13c03adbff25b65effde7ce864ee952017098"
@@ -4642,6 +4673,14 @@ node-pre-gyp@^0.6.36:
     semver "^5.3.0"
     tar "^2.2.1"
     tar-pack "^3.4.0"
+
+node-schedule@^1.2.5:
+  version "1.2.5"
+  resolved "http://registry.npm.taobao.org/node-schedule/download/node-schedule-1.2.5.tgz#fb30f4e4d1dd1e81c536f9495d5da0e9e2d7de14"
+  dependencies:
+    cron-parser "^2.4.0"
+    long-timeout "0.1.1"
+    sorted-array-functions "^1.0.0"
 
 nopt@^4.0.1:
   version "4.0.1"
@@ -5997,6 +6036,10 @@ sort-keys@^1.0.0:
   resolved "http://registry.npm.taobao.org/sort-keys/download/sort-keys-1.1.2.tgz#441b6d4d346798f1b4e49e8920adfba0e543f9ad"
   dependencies:
     is-plain-obj "^1.0.0"
+
+sorted-array-functions@^1.0.0:
+  version "1.0.0"
+  resolved "http://registry.npm.taobao.org/sorted-array-functions/download/sorted-array-functions-1.0.0.tgz#c0b554d9e709affcbe56d34c1b2514197fd38279"
 
 source-list-map@^2.0.0:
   version "2.0.0"
