@@ -2,7 +2,7 @@
   <v-layout row wrap justify-center id="wrapper">
     <v-flex xs10 class="mt-4">
       <v-card>
-        <v-card-title class="headline">XX</v-card-title>
+        <v-card-title class="headline">OOO</v-card-title>
         <v-divider></v-divider>
         <v-card-actions class="pt-3 pb-3">
           <v-spacer></v-spacer>
@@ -32,13 +32,12 @@ window.DATE_FORMAT = DATE_FORMAT
 
 let localBasePath = ''
 const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
-const hostInfo = require('../../../config')
+const config = require('../../../config')
 
 export default {
   name: 'index',
   data() {
     return {
-      hostInfo,
       logs: [], // 存放日志信息
       mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录 或 文件
         // file: 33204,
@@ -54,22 +53,20 @@ export default {
     }
   },
   mounted() {
-    // this.init()
+    this.init()
     SCHEDULE.scheduleJob('0 10 19 * * *', () => this.init()) // 每天下午 19:10 定时任务开启
   },
   methods: {
     log_sucs: filename => console.log('%c%s', 'color: green', 'Log :: download success!', '文件名:', filename, ',创建时间:', new Date().toLocaleString()),
     f_time: (timestamp, ratio = 1) => DATE_FORMAT(new Date(timestamp * ratio).toLocaleString(), 'yyyy-mm-dd HH:MM:ss'),
-    toGetTimeRange(startDay, endDay = 1) {
+    toGetTimeRange(startDay, endDay = startDay) {
       const end = new Date()
       const start = new Date()
-      end.setTime(end.getTime() - 3600 * 1000 * 24 * ~~endDay)
-      start.setTime(start.getTime() - 3600 * 1000 * 24 * (~~startDay + 1))
-
-      const formatPicker = (s, r, t = '-') => s.toLocaleDateString().replace(/\//g, t) + (r ? ' 00:00:00' : ' 19:00:59')
+      end.setTime(end.getTime() - 3600 * 1000 * 24 * endDay)
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * startDay)
       return [
-        DATE_FORMAT(new Date(start), 'yyyy-mm-dd HH:MM:ss'),
-        DATE_FORMAT(end, 'yyyy-mm-dd HH:MM:ss')
+        DATE_FORMAT(start.toLocaleDateString() + ' 00:00:00', 'yyyy-mm-dd HH:MM:ss'),
+        DATE_FORMAT(end.toLocaleDateString() + ' 19:00:00', 'yyyy-mm-dd HH:MM:ss')
       ]
     },
     is_time_range(time) { // 时间范围判断
@@ -103,7 +100,7 @@ export default {
       } else {
         resolve && resolve('success!')
         this.log_sucs(mTime + filename)
-      })
+      }
       // } else {
       // resolve && resolve('success!')
       // }
@@ -147,21 +144,21 @@ export default {
     },
     init() {
       let Client = new SSH.Client()
-      let timeRange = this.toGetTimeRange(-1, 0)
+      let timeRange = this.toGetTimeRange(0) // 今天
       this.timeBegin = timeRange[0]
       this.timeEnd = timeRange[1]
       localBasePath = PATH.resolve('F:\\统计数据\\' + timeRange[0].split(' ')[0]) // 根据今天日期生成目录
+      console.warn(timeRange)
+      // Client.on('ready', () => {
+      //   console.info('Log :: ready...')
 
-      Client.on('ready', () => {
-        console.info('Log :: ready...')
+      //   Client.sftp((err, sftp) => {
+      //     if (err) throw err
 
-        Client.sftp((err, sftp) => {
-          if (err) throw err
-
-          this.sftp = sftp
-          this.download()
-        })
-      }).connect(this.hostInfo)
+      //     this.sftp = sftp
+      //     this.download()
+      //   })
+      // }).connect(config)
     }
   }
 }

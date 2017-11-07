@@ -54,10 +54,7 @@
   },
   "dependencies": {
     "axios": "^0.16.1",
-<<<<<<< HEAD
     "dateformat": "^3.0.2",
-=======
->>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
     "node-schedule": "^1.2.5",
     "ssh2": "^0.5.5",
     "vue": "^2.4.2",
