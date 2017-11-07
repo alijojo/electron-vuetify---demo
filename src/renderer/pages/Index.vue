@@ -2,6 +2,7 @@
   <v-layout row wrap justify-center id="wrapper">
     <v-flex xs10 class="mt-4">
       <v-card>
+<<<<<<< HEAD
         <v-card-title class="headline">XX</v-card-title>
         <v-divider></v-divider>
         <v-card-actions class="pt-3 pb-3">
@@ -14,6 +15,17 @@
           <div>
             <template v-for="(log, index) of logs">{{ log }}<br/></template>
           </div>
+=======
+        <v-card-title class="headline">驾遇打印记录自助下载器</v-card-title>
+        <v-divider></v-divider>
+        <v-card-actions class="pt-3 pb-3">
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button1</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button2</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn">button3</v-btn>
+>>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
           <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
@@ -26,6 +38,7 @@ let SSH = require('ssh2')
 let PATH = require('path')
 let FS = require('fs-extra')
 let SCHEDULE = require('node-schedule')
+<<<<<<< HEAD
 let DATE_FORMAT = require('dateformat')
 
 window.DATE_FORMAT = DATE_FORMAT
@@ -33,11 +46,17 @@ window.DATE_FORMAT = DATE_FORMAT
 let localBasePath = ''
 const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
 const hostInfo = require('../../../config')
+=======
+
+const remoteBasePath = '/data/htdocs/ycbb/Insurance/Public/static/packaged-assets/WX_CarLoan/testp/static'
+const localBasePath = PATH.resolve('./.load')
+>>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
 
 export default {
   name: 'index',
   data() {
     return {
+<<<<<<< HEAD
       hostInfo,
       logs: [], // 存放日志信息
       mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录 或 文件
@@ -45,6 +64,19 @@ export default {
         // folder: 16893
         file: 33188,
         folder: 16895
+=======
+      // remoteBasePath,
+      // localBasePath,
+      hostInfo: {
+        host: '182.254.240.237',
+        port: 22,
+        username: 'ubuntu',
+        password: '******'
+      },
+      mode: { // UNIX系统下文件的权限代号, 这里用来判断是目录or文件
+        file: 33204,
+        folder: 16893
+>>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
       },
       sftp: null,
       mainRun: null, // 主线程
@@ -91,6 +123,7 @@ export default {
 
       let mTime = this.f_time(mtime, 1000)
       // resolve('debug!')
+<<<<<<< HEAD
       if (this.is_time_range(mTime)) {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
           resolve && resolve('success!')
@@ -101,8 +134,18 @@ export default {
           // this.log_sucs(mTime + filename)
         })
       } else {
+=======
+      // if (this.is_time_range(mTime)) {
+      this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
+        if (err) throw err
+
+>>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
         resolve && resolve('success!')
-      }
+        this.log_sucs(mTime + filename)
+      })
+      // } else {
+      // resolve && resolve('success!')
+      // }
     },
     * request(filelist, parent) {
       for (let i = 0; i < filelist.length; ++i) {
@@ -143,10 +186,16 @@ export default {
     },
     init() {
       let Client = new SSH.Client()
+<<<<<<< HEAD
       let timeRange = this.toGetTimeRange(-1, 0)
       this.timeBegin = timeRange[0]
       this.timeEnd = timeRange[1]
       localBasePath = PATH.resolve('F:\\统计数据\\' + timeRange[0].split(' ')[0]) // 根据今天日期生成目录
+=======
+      let timeRange = this.toGetTimeRange(0)
+      this.timeBegin = timeRange[0]
+      this.timeEnd = timeRange[1]
+>>>>>>> ccaae89b217fcfead58d7636fde144b451f56c57
 
       Client.on('ready', () => {
         console.info('Log :: ready...')
