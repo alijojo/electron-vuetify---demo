@@ -37,8 +37,8 @@ export default {
   data() {
     return {
       logs: [], // 存放日志信息
-      runType: 'stop',
       sftp: null,
+      runType: 'stop',
       mainRun: null, // 主线程
       childRun: {}, // 存在目录时, 会在子线程里跑
       timeBegin: '',
@@ -51,13 +51,15 @@ export default {
         case 'underway': // 正在下载进行时
           if (oldVal === 'stop') // 从[开始]点过来的
             this.init()
-          // else // 从[继续]点过来的
+          else // 从[继续]点过来的
+            [this.mainRun, ...Object.values(this.childRun)].forEach(v => v.next())
           break
         case 'pause': // 下载暂停
-
           break
         case 'stop': // 下载停止
           this.sftp.end()
+          this.mainRun = null
+          this.childRun = {}
           break
         default:
           break
@@ -110,8 +112,12 @@ export default {
         resolve && resolve('success!')
       }
     },
-    req(filelist, parent) {
-      new Promise(resolve => this.addQueue(filelist, parent, resolve))
+    * req(filelist, parent) {
+      if (this.runType === 'pause') {
+        // console.warn(filelist.filename)
+        yield 'pause'
+      }
+      yield new Promise(resolve => this.addQueue(filelist, parent, resolve))
         .then(data => {
           parent === ''
             ? this.mainRun.next(data) // 直接根目录下的文件在主线程跑
@@ -122,7 +128,7 @@ export default {
     * eachFilelist(filelist, parent) {
       for (let i = 0; i < filelist.length; ++i) {
         if (config.mode.file === filelist[i].attrs.mode) { // 是文件
-          yield this.req(filelist[i], parent)
+          yield * this.req(filelist[i], parent)
         } else { // 是目录
           this.download(parent + '/' + filelist[i].filename)
         }
