@@ -7,10 +7,10 @@
         <v-card-actions class="pt-3 pb-3">
           <v-spacer></v-spacer>
           <!-- <v-btn class="link-btn">button1</v-btn>
-              <v-spacer></v-spacer>
-              <v-btn class="link-btn">button2</v-btn>
-              <v-spacer></v-spacer>
-              <v-btn class="link-btn">button3</v-btn> -->
+                <v-spacer></v-spacer>
+                <v-btn class="link-btn">button2</v-btn>
+                <v-spacer></v-spacer>
+                <v-btn class="link-btn">button3</v-btn> -->
           <div>
             <template v-for="(log, index) of logs">{{ log }}<br/></template>
           </div>
@@ -43,7 +43,7 @@ export default {
         // file: 33204,
         // folder: 16893
         file: 33188,
-        folder: 16895
+        folder: [16895, 16877]
       },
       sftp: null,
       mainRun: null, // 主线程
@@ -59,7 +59,7 @@ export default {
   methods: {
     log_sucs: filename => console.log('%c%s', 'color: green', 'Log :: download success!', '文件名:', filename, ',创建时间:', new Date().toLocaleString()),
     f_time: (timestamp, ratio = 1) => DATE_FORMAT(new Date(timestamp * ratio).toLocaleString(), 'yyyy-mm-dd HH:MM:ss'),
-    toGetTimeRange(startDay, endDay = startDay) {
+    toGetTimeRange(startDay = 0, endDay = startDay) {
       const end = new Date()
       const start = new Date()
       end.setTime(end.getTime() - 3600 * 1000 * 24 * endDay)
@@ -78,7 +78,7 @@ export default {
         return true
       return false
     },
-    add_queue({ filename, attrs: { mtime } }, parent, resolve) {
+    add_queue({ filename, attrs: { mtime, mode } }, parent, resolve) {
       const remoteFile = remoteBasePath + parent + '/' + filename
       const localFile = localBasePath + parent + '/' + filename
 
@@ -87,11 +87,9 @@ export default {
       }
 
       let mTime = this.f_time(mtime, 1000)
-      // resolve('debug!')
       if (this.is_time_range(mTime)) {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
           resolve && resolve('success!')
-
           if (err) throw err
 
           this.log_sucs(filename)
@@ -99,34 +97,20 @@ export default {
         })
       } else {
         resolve && resolve('success!')
-        this.log_sucs(mTime + filename)
       }
-      // } else {
-      // resolve && resolve('success!')
-      // }
     },
     * request(filelist, parent) {
       for (let i = 0; i < filelist.length; ++i) {
-        if (this.mode.folder === filelist[i].attrs.mode) { // 是目录
-          this.download(parent + '/' + filelist[i].filename)
-        } else { // 是文件
+        if (this.mode.file === filelist[i].attrs.mode) { // 是文件
           yield this.req(filelist[i], parent)
+        } else { // 是目录
+          this.download(parent + '/' + filelist[i].filename)
         }
       }
     },
     req(filelist, parent) {
-      // new Promise(resolve => this.add_queue(filelist, parent, resolve))
-      //   .then(data => parent === '' ? this.mainRun.next(data) : this.childRun[parent].next(data))
-      //   .catch(err => console.error(err))
       new Promise(resolve => this.add_queue(filelist, parent, resolve))
-        .then(data => {
-          // this.logs.unshift(this.childRun[parent])
-          // console.warn(filelist, parent)
-          if (parent === '')
-            this.mainRun.next(data)
-          else
-            this.childRun[parent].next(data)
-        })
+        .then(data => parent === '' ? this.mainRun.next(data) : this.childRun[parent].next(data))
         .catch(err => console.error(err))
     },
     download(path = '') {
@@ -144,21 +128,21 @@ export default {
     },
     init() {
       let Client = new SSH.Client()
-      let timeRange = this.toGetTimeRange(0) // 今天
+      let timeRange = this.toGetTimeRange() // 今天
       this.timeBegin = timeRange[0]
       this.timeEnd = timeRange[1]
       localBasePath = PATH.resolve('F:\\统计数据\\' + timeRange[0].split(' ')[0]) // 根据今天日期生成目录
-      console.warn(timeRange)
-      // Client.on('ready', () => {
-      //   console.info('Log :: ready...')
 
-      //   Client.sftp((err, sftp) => {
-      //     if (err) throw err
+      Client.on('ready', () => {
+        console.info('Log :: ready...')
 
-      //     this.sftp = sftp
-      //     this.download()
-      //   })
-      // }).connect(config)
+        Client.sftp((err, sftp) => {
+          if (err) throw err
+
+          this.sftp = sftp
+          this.download()
+        })
+      }).connect(config)
     }
   }
 }
