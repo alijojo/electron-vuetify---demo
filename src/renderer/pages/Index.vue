@@ -37,29 +37,26 @@ export default {
   data() {
     return {
       logs: [], // 存放日志信息
-      sftp: null,
-      runType: 'stop',
-      mainRun: null, // 主线程
-      childRun: {}, // 存在目录时, 会在子线程里跑
-      timeBegin: '',
-      timeEnd: ''
+      sftp: null, // 当前连接的sftp实例
+      runType: 'stop', // 当前程序运行的状态 underway:下载中 pause:暂停 stop:停止
+      thread: { main: null }, // 直接根目录下的文件在主线程main跑, 非直接根目录下的文件(文件夹下的文件)在新开的线程跑
+      timeBegin: '', // 开始时间
+      timeEnd: '' // 结束时间
     }
   },
   watch: {
     runType(newVal, oldVal) {
       switch (newVal) {
         case 'underway': // 正在下载进行时
-          if (oldVal === 'stop') // 从[开始]点过来的
-            this.init()
-          else // 从[继续]点过来的
-            [this.mainRun, ...Object.values(this.childRun)].forEach(v => v.next())
+          oldVal === 'stop'
+            ? this.init() // 从[开始]点过来的
+            : Object.values(this.thread).forEach(v => v.next()) // 从[继续]点过来的
           break
         case 'pause': // 下载暂停
           break
         case 'stop': // 下载停止
           this.sftp.end()
-          this.mainRun = null
-          this.childRun = {}
+          this.thread = { main: null }
           break
         default:
           break
@@ -99,14 +96,14 @@ export default {
         FS.ensureDirSync(PATH.dirname(localFile))
       }
 
-      let mTime = this.f_time(mtime, 1000)
-      if (this.isTimeRange(mTime)) {
+      mtime = this.f_time(mtime, 1000)
+      if (this.isTimeRange(mtime) || filename.indexOf('redis.txt') > -1) {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
           resolve && resolve('success!')
           if (err) throw err
 
           this.log_sucs(filename)
-          // this.log_sucs(mTime + filename)
+          // this.log_sucs(mtime + filename)
         })
       } else {
         resolve && resolve('success!')
@@ -119,32 +116,24 @@ export default {
       }
       yield new Promise(resolve => this.addQueue(filelist, parent, resolve))
         .then(data => {
-          parent === ''
-            ? this.mainRun.next(data) // 直接根目录下的文件在主线程跑
-            : this.childRun[parent].next(data) // 非直接根目录下的文件(文件夹下的文件)在子线程跑
+          if (parent === '') parent = 'main'
+          this.thread[parent].next(data)
         })
         .catch(err => console.error(err))
     },
     * eachFilelist(filelist, parent) {
-      for (let i = 0; i < filelist.length; ++i) {
-        if (config.mode.file === filelist[i].attrs.mode) { // 是文件
-          yield * this.req(filelist[i], parent)
-        } else { // 是目录
-          this.download(parent + '/' + filelist[i].filename)
-        }
-      }
+      for (let i = 0; i < filelist.length; ++i)
+        config.mode.file === filelist[i].attrs.mode
+          ? yield * this.req(filelist[i], parent) // 是文件
+          : this.download(parent + '/' + filelist[i].filename) // 是目录
     },
     download(path = '') {
       this.sftp.readdir(remoteBasePath + path, (err, list) => {
         if (err) throw err
 
-        if (path === '') {
-          this.mainRun = this.eachFilelist(list, path)
-          this.mainRun.next()
-        } else {
-          this.childRun[path] = this.eachFilelist(list, path)
-          this.childRun[path].next()
-        }
+        let promise = path === ''
+          ? (this.thread['main'] = this.eachFilelist(list, path)).next()
+          : (this.thread[path] = this.eachFilelist(list, path)).next()
       })
     },
     init() {
