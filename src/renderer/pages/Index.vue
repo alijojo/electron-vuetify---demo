@@ -11,6 +11,8 @@
           <v-btn class="link-btn" @click.native="runType = 'underway'" v-if="runType === 'pause'">继续</v-btn>
           <v-spacer></v-spacer>
           <v-btn class="link-btn" @click.native="runType = 'stop'">停止</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn class="link-btn" @click.native="test">测试</v-btn>
           <div>
             <!-- <template v-for="(log, index) of logs">{{ log }}<br/></template> -->
           </div>
@@ -35,13 +37,14 @@ const config = require('../../../config')
 export default {
   name: 'index',
   data() {
+    let timeRange = this.getTimeRange() // 今天
     return {
       logs: [], // 存放日志信息
       sftp: null, // 当前连接的sftp实例
       runType: 'stop', // 当前程序运行的状态 underway:下载中 pause:暂停 stop:停止
       thread: { main: null }, // 直接根目录下的文件在主线程main跑, 非直接根目录下的文件(文件夹下的文件)在新开的线程跑
-      timeBegin: '', // 开始时间
-      timeEnd: '' // 结束时间
+      timeBegin: timeRange[0], // 开始时间
+      timeEnd: timeRange[1] // 结束时间
     }
   },
   watch: {
@@ -136,23 +139,34 @@ export default {
           : (this.thread[path] = this.eachFilelist(list, path)).next()
       })
     },
-    init() {
+    connectSFTP(callback) {
       let Client = new SSH.Client()
-      let timeRange = this.getTimeRange() // 今天
-      this.timeBegin = timeRange[0]
-      this.timeEnd = timeRange[1]
-      localBasePath = PATH.resolve('F:\\统计数据\\' + timeRange[0].split(' ')[0]) // 根据今天日期生成目录
 
       Client.on('ready', () => {
         console.info('Log :: ready...')
 
         Client.sftp((err, sftp) => {
           if (err) throw err
-
           this.sftp = sftp
-          this.download()
+          callback(err, sftp)
         })
       }).connect(config.hostInfo)
+    },
+    init() {
+      localBasePath = PATH.resolve('F:\\统计数据\\' + this.timeBegin.split(' ')[0]) // 根据今天日期生成目录
+      this.connectSFTP(() => this.download())
+    },
+    test() {
+      this.connectSFTP(() => {
+        this.sftp.readFile(remoteBasePath + '/redis.txt', (err, data) => {
+          if (err) throw err
+          let content = data.toString()
+          let tempArr = content.split(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)
+          if (tempArr.length > 1)
+            content = this.timeEnd + tempArr[tempArr.length - 1]
+          // FS
+        })
+      })
     }
   }
 }
