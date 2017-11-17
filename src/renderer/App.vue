@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <v-app dark>
+    <v-app>
        <!-- <v-navigation-drawer persistent :mini-variant="miniVariant" :clipped="clipped" v-model="drawer">
         <v-list>
           <v-list-tile router :to="item.to" :key="i" v-for="(item, i) in items" exact>
@@ -80,7 +80,7 @@ export default {
 
 
 <style>
-/* @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons'); */
+ @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons');
 
 /* Global CSS */
 

@@ -1,22 +1,49 @@
 <template>
   <v-layout row wrap justify-center id="wrapper">
-    <v-flex xs10 class="mt-4">
+    <v-layout row wrap justify-center align-center>
+      <v-flex xs8 sm4>
+        <v-menu lazy :close-on-content-click="false" v-model="menu_1" transition="scale-transition" offset-y full-width :nudge-right="40" max-width="290px" min-width="290px">
+          <v-text-field slot="activator" label="选择开始日期" v-model="time_1" prepend-icon="event" readonly></v-text-field>
+          <v-date-picker v-model="time_1" no-title scrollable actions></v-date-picker>
+        </v-menu>
+      </v-flex>
+      <v-flex xs8 sm4>
+        <v-menu lazy :close-on-content-click="false" v-model="menu_2" transition="scale-transition" offset-y full-width :nudge-right="40" max-width="290px" min-width="290px">
+          <v-text-field slot="activator" label="选择结束日期" v-model="time_2" prepend-icon="event" readonly></v-text-field>
+          <v-date-picker v-model="time_2" no-title scrollable actions></v-date-picker>
+        </v-menu>
+      </v-flex>
+      <v-flex xs4 sm2 pl-4>
+        <v-select :items="states" item-text="text" item-value="value" v-model="e" single-line auto append-icon="map" hide-details></v-select>
+      </v-flex>
+    </v-layout>
+    <v-flex xs10 mt-4>
       <v-card>
         <v-card-title class="headline">咔咔下载器</v-card-title>
         <v-divider></v-divider>
         <v-card-actions class="pt-3 pb-3">
           <v-spacer></v-spacer>
-          <v-btn class="link-btn" @click.native="runType = 'underway'" v-if="runType === 'stop'">开始</v-btn>
-          <v-btn class="link-btn" @click.native="runType = 'pause'" v-if="runType === 'underway'">暂停</v-btn>
-          <v-btn class="link-btn" @click.native="runType = 'underway'" v-if="runType === 'pause'">继续</v-btn>
+          <v-btn class="link-btn" @click="runType = 'underway'" v-if="runType === 'stop'">开始</v-btn>
+          <v-btn class="link-btn" @click="runType = 'pause'" v-if="runType === 'underway'">暂停</v-btn>
+          <v-btn class="link-btn" @click="runType = 'underway'" v-if="runType === 'pause'">继续</v-btn>
           <v-spacer></v-spacer>
-          <v-btn class="link-btn" @click.native="runType = 'stop'">停止</v-btn>
+          <v-btn class="link-btn" @click="runType = 'stop'">停止</v-btn>
           <!-- <v-spacer></v-spacer> -->
           <!-- <v-btn class="link-btn" @click.native="test">测试</v-btn> -->
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-flex>
+    <v-flex xs10 mt-4>
+      <v-card color="blue-grey darken-2" class="dark--text">
+        <v-card-title primary-title>
+          <div class="headline">日志</div>
           <div>
             <template v-for="(log, index) of logs">{{ log }}<br/></template>
           </div>
-          <v-spacer></v-spacer>
+        </v-card-title>
+        <v-card-actions>
+          <v-btn flat @click="logs = []">Clean logs</v-btn>
         </v-card-actions>
       </v-card>
     </v-flex>
@@ -33,17 +60,52 @@ const config = require('../../../config')
 const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
 let localBasePath = ''
 
+const getTimeRange = (startDay = 0, endDay = startDay) => {
+  const end = new Date()
+  const start = new Date()
+  end.setTime(end.getTime() - 3600 * 1000 * 24 * endDay)
+  start.setTime(start.getTime() - 3600 * 1000 * 24 * startDay)
+  return [
+    DATE_FORMAT(start.toLocaleDateString(), 'yyyy-mm-dd'),
+    DATE_FORMAT(end.toLocaleDateString(), 'yyyy-mm-dd')
+  ]
+}
+let timeRange = getTimeRange()
+
 export default {
   name: 'index',
   data() {
-    let timeRange = this.getTimeRange(1) // 今天
     return {
+      time_1: null,
+      time_2: null,
+      menu_1: false,
+      menu_2: false,
+      states: [
+        {value: '2017-1', text: '今天'},
+        {value: 'a', text: '昨天'}
+      ],
+      e: 'a',
+      // items: [
+      //   { text: 'State 1' },
+      //   { text: 'State 2' },
+      //   { text: 'State 3' },
+      //   { text: 'State 4' },
+      //   { text: 'State 5' },
+      //   { text: 'State 6' },
+      //   { text: 'State 7' }
+      // ],
       logs: [], // 存放日志信息
       sftp: null, // 当前连接的sftp实例
       runType: 'stop', // 当前程序运行的状态 underway:下载中 pause:暂停 stop:停止
-      thread: { main: null }, // 直接根目录下的文件在主线程main跑, 非直接根目录下的文件(文件夹下的文件)在新开的线程跑
-      timeBegin: timeRange[0], // 开始时间
-      timeEnd: timeRange[1] // 结束时间
+      thread: { main: null } // 直接根目录下的文件在主线程main跑, 非直接根目录下的文件(文件夹下的文件)在新开的线程跑
+    }
+  },
+  computed: {
+    timeBegin() { // 开始时间
+      return DATE_FORMAT(`${this.time_1 || timeRange[0]} 00:00:00`, 'yyyy-mm-dd HH:MM:ss')
+    },
+    timeEnd() { // 结束时间
+      return DATE_FORMAT(`${this.time_2 || timeRange[1]} 19:00:00`, 'yyyy-mm-dd HH:MM:ss')
     }
   },
   watch: {
@@ -58,7 +120,6 @@ export default {
           break
         case 'stop': // 下载停止
           this.sftp.end()
-          this.logs = []
           this.thread = { main: null }
           break
         default:
@@ -76,16 +137,6 @@ export default {
       console.log('%c%s', 'color: green', content)
     },
     f_time: (timestamp, ratio = 1) => DATE_FORMAT(new Date(timestamp * ratio).toLocaleString(), 'yyyy-mm-dd HH:MM:ss'),
-    getTimeRange: (startDay = 0, endDay = startDay) => {
-      const end = new Date()
-      const start = new Date()
-      end.setTime(end.getTime() - 3600 * 1000 * 24 * endDay)
-      start.setTime(start.getTime() - 3600 * 1000 * 24 * startDay)
-      return [
-        DATE_FORMAT(start.toLocaleDateString() + ' 00:00:00', 'yyyy-mm-dd HH:MM:ss'),
-        DATE_FORMAT(end.toLocaleDateString() + ' 19:00:00', 'yyyy-mm-dd HH:MM:ss')
-      ]
-    },
     isTimeRange(time) { // 时间范围判断
       time = time.replace(/\D+/g, '')
       let begin = this.timeBegin.replace(/\D+/g, '')
@@ -144,7 +195,7 @@ export default {
       })
     },
     downloadRedis() {
-      const localfile = `${localBasePath}/redis.txt`
+      const localfile = `${localBasePath}${PATH.sep}redis.txt`
       const remoteFile = `${remoteBasePath}/redis.txt`
 
       this.sftp.readFile(remoteFile, (err, data) => {
