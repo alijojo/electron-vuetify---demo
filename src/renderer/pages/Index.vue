@@ -11,10 +11,10 @@
           <v-btn class="link-btn" @click.native="runType = 'underway'" v-if="runType === 'pause'">继续</v-btn>
           <v-spacer></v-spacer>
           <v-btn class="link-btn" @click.native="runType = 'stop'">停止</v-btn>
-          <v-spacer></v-spacer>
-          <v-btn class="link-btn" @click.native="test">测试</v-btn>
+          <!-- <v-spacer></v-spacer> -->
+          <!-- <v-btn class="link-btn" @click.native="test">测试</v-btn> -->
           <div>
-            <!-- <template v-for="(log, index) of logs">{{ log }}<br/></template> -->
+            <template v-for="(log, index) of logs">{{ log }}<br/></template>
           </div>
           <v-spacer></v-spacer>
         </v-card-actions>
@@ -24,20 +24,19 @@
 </template>
 
 <script>
-let SSH = require('ssh2')
-let PATH = require('path')
-let FS = require('fs-extra')
-let SCHEDULE = require('node-schedule')
-let DATE_FORMAT = require('dateformat')
-
-let localBasePath = ''
-const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
+const SSH = require('ssh2')
+const PATH = require('path')
+const FS = require('fs-extra')
+const SCHEDULE = require('node-schedule')
+const DATE_FORMAT = require('dateformat')
 const config = require('../../../config')
+const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
+let localBasePath = ''
 
 export default {
   name: 'index',
   data() {
-    let timeRange = this.getTimeRange() // 今天
+    let timeRange = this.getTimeRange(1) // 今天
     return {
       logs: [], // 存放日志信息
       sftp: null, // 当前连接的sftp实例
@@ -59,6 +58,7 @@ export default {
           break
         case 'stop': // 下载停止
           this.sftp.end()
+          this.logs = []
           this.thread = { main: null }
           break
         default:
@@ -70,7 +70,11 @@ export default {
     SCHEDULE.scheduleJob('0 10 19 * * *', () => this.init()) // 每天下午 19:10 定时任务开启
   },
   methods: {
-    log_sucs: filename => console.log('%c%s', 'color: green', 'Log :: download success!', '文件名:', filename, ',创建时间:', new Date().toLocaleString()),
+    log_sucs(filename) {
+      let content = `Log :: download success! 文件名:${filename}创建时间:${new Date().toLocaleString()}`
+      this.logs.unshift(content)
+      console.log('%c%s', 'color: green', content)
+    },
     f_time: (timestamp, ratio = 1) => DATE_FORMAT(new Date(timestamp * ratio).toLocaleString(), 'yyyy-mm-dd HH:MM:ss'),
     getTimeRange: (startDay = 0, endDay = startDay) => {
       const end = new Date()
@@ -100,7 +104,7 @@ export default {
       }
 
       mtime = this.f_time(mtime, 1000)
-      if (this.isTimeRange(mtime) || filename.indexOf('redis.txt') > -1) {
+      if (this.isTimeRange(mtime) && filename !== 'redis.txt') {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
           resolve && resolve('success!')
           if (err) throw err
@@ -139,6 +143,37 @@ export default {
           : (this.thread[path] = this.eachFilelist(list, path)).next()
       })
     },
+    downloadRedis() {
+      const localfile = `${localBasePath}/redis.txt`
+      const remoteFile = `${remoteBasePath}/redis.txt`
+
+      this.sftp.readFile(remoteFile, (err, data) => {
+        if (err) throw err
+
+        let reg = /\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/g
+        let content = data.toString()
+        let tempObj = {}
+        let tempArr = content.split(reg).slice(1)
+        let keys = content.match(reg)
+        if (keys)
+          tempArr = tempArr.map((v, i) => {
+            const value = keys[i] + v
+            const key = keys[i].split(' ')[0]
+            tempObj[key] = value
+            return value
+          })
+
+        const key = this.timeEnd.split(' ')[0]
+        FS.ensureFile(localfile)
+          .then(() => {
+            FS.outputFile(localfile, tempObj[key], (err) => {
+              if (err) throw err
+              console.info('%c%s', 'color: green', `Log :: 写入文件 ${localfile} 成功!`)
+            })
+          })
+          .catch(err => console.error(err))
+      })
+    },
     connectSFTP(callback) {
       let Client = new SSH.Client()
 
@@ -154,18 +189,15 @@ export default {
     },
     init() {
       localBasePath = PATH.resolve('F:\\统计数据\\' + this.timeBegin.split(' ')[0]) // 根据今天日期生成目录
-      this.connectSFTP(() => this.download())
+
+      this.connectSFTP(() => {
+        this.download()
+        this.downloadRedis()
+      })
     },
     test() {
       this.connectSFTP(() => {
-        this.sftp.readFile(remoteBasePath + '/redis.txt', (err, data) => {
-          if (err) throw err
-          let content = data.toString()
-          let tempArr = content.split(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/)
-          if (tempArr.length > 1)
-            content = this.timeEnd + tempArr[tempArr.length - 1]
-          // FS
-        })
+
       })
     }
   }
