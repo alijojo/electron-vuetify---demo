@@ -28,6 +28,7 @@ module.exports = {
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
     "space-before-function-paren": [0, "always"],//函数定义时括号前面要不要有空格
     "no-unused-vars": [0, {"vars": "all", "args": "after-used"}],
-    "curly": 0 //if、else、while、for代码块用{}包围
+    "curly": 0, //if、else、while、for代码块用{}包围
+    "camelcase": 0 //驼峰式验证规则
   }
 }

@@ -14,7 +14,7 @@
         </v-menu>
       </v-flex>
       <v-flex xs4 sm2 pl-4>
-        <v-select :items="states" item-text="text" item-value="value" v-model="e" single-line auto append-icon="map" hide-details></v-select>
+        <v-select :items="states" item-text="text" item-value="value" v-model="defaultTime" single-line auto append-icon="map" hide-details></v-select>
       </v-flex>
     </v-layout>
     <v-flex xs10 mt-4>
@@ -70,30 +70,26 @@ const getTimeRange = (startDay = 0, endDay = startDay) => {
     DATE_FORMAT(end.toLocaleDateString(), 'yyyy-mm-dd')
   ]
 }
-let timeRange = getTimeRange()
 
 export default {
   name: 'index',
   data() {
+    const today = getTimeRange(0)
+    const yesterday_1 = getTimeRange(1)
+    const yesterday_2 = getTimeRange(2)
+    const yesterday_3 = getTimeRange(3)
     return {
       time_1: null,
       time_2: null,
       menu_1: false,
       menu_2: false,
+      defaultTime: yesterday_1,
       states: [
-        {value: '2017-1', text: '今天'},
-        {value: 'a', text: '昨天'}
+        {value: today, text: '今天'},
+        {value: yesterday_1, text: '昨天'},
+        {value: yesterday_2, text: '前天'},
+        {value: yesterday_3, text: '大前天'}
       ],
-      e: 'a',
-      // items: [
-      //   { text: 'State 1' },
-      //   { text: 'State 2' },
-      //   { text: 'State 3' },
-      //   { text: 'State 4' },
-      //   { text: 'State 5' },
-      //   { text: 'State 6' },
-      //   { text: 'State 7' }
-      // ],
       logs: [], // 存放日志信息
       sftp: null, // 当前连接的sftp实例
       runType: 'stop', // 当前程序运行的状态 underway:下载中 pause:暂停 stop:停止
@@ -102,13 +98,17 @@ export default {
   },
   computed: {
     timeBegin() { // 开始时间
-      return DATE_FORMAT(`${this.time_1 || timeRange[0]} 00:00:00`, 'yyyy-mm-dd HH:MM:ss')
+      return DATE_FORMAT(`${this.time_1 || this.defaultTime[0]} 00:00:00`, 'yyyy-mm-dd HH:MM:ss')
     },
     timeEnd() { // 结束时间
-      return DATE_FORMAT(`${this.time_2 || timeRange[1]} 19:00:00`, 'yyyy-mm-dd HH:MM:ss')
+      return DATE_FORMAT(`${this.time_2 || this.defaultTime[1]} 19:00:00`, 'yyyy-mm-dd HH:MM:ss')
     }
   },
   watch: {
+    defaultTime(time) {
+      this.time_1 = null
+      this.time_2 = null
+    },
     runType(newVal, oldVal) {
       switch (newVal) {
         case 'underway': // 正在下载进行时
