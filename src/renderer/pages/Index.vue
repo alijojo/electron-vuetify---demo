@@ -57,8 +57,8 @@ const FS = require('fs-extra')
 const SCHEDULE = require('node-schedule')
 const DATE_FORMAT = require('dateformat')
 const config = require('../../../config')
-const remoteBasePath = '/data/htdocs/Insurance/Public/upload/camera'
-let localBasePath = ''
+
+let { remotePath, localPath } = config
 
 const getTimeRange = (startDay = 0, endDay = startDay) => {
   const end = new Date()
@@ -97,8 +97,14 @@ export default {
     }
   },
   computed: {
+    dateBegin() { // 开始日期
+      return DATE_FORMAT(this.time_1 || this.defaultTime[0], 'yyyy-mm-dd')
+    },
+    dateEnd() { // 结束日期
+      return DATE_FORMAT(this.time_2 || this.defaultTime[1], 'yyyy-mm-dd')
+    },
     timeBegin() { // 开始时间
-      return DATE_FORMAT(`${this.time_1 || this.defaultTime[0]} 00:00:00`, 'yyyy-mm-dd HH:MM:ss')
+      return DATE_FORMAT(`${this.time_1 || this.defaultTime[0]} 000:00:00`, 'yyyy-mm-dd HH:MM:ss')
     },
     timeEnd() { // 结束时间
       return DATE_FORMAT(`${this.time_2 || this.defaultTime[1]} 19:00:00`, 'yyyy-mm-dd HH:MM:ss')
@@ -147,15 +153,15 @@ export default {
       return false
     },
     addQueue({ filename, attrs: { mtime, mode } }, parent, resolve) {
-      const remoteFile = remoteBasePath + parent + '/' + filename
-      const localFile = localBasePath + parent + '/' + filename
+      const remoteFile = remotePath + parent + '/' + filename
+      const localFile = localPath + parent + '/' + filename
 
       if (!FS.pathExistsSync(PATH.dirname(localFile))) { // 不存在此目录的话就创建一个
         FS.ensureDirSync(PATH.dirname(localFile))
       }
 
       mtime = this.f_time(mtime, 1000)
-      if (this.isTimeRange(mtime) && filename !== 'redis.txt') {
+      if (this.isTimeRange(mtime)) {
         this.sftp.fastGet(remoteFile, PATH.normalize(localFile), (err, list) => {
           resolve && resolve('success!')
           if (err) throw err
@@ -169,7 +175,6 @@ export default {
     },
     * req(filelist, parent) {
       if (this.runType === 'pause') {
-        // console.warn(filelist.filename)
         yield 'pause'
       }
       yield new Promise(resolve => this.addQueue(filelist, parent, resolve))
@@ -180,23 +185,30 @@ export default {
         .catch(err => console.error(err))
     },
     * eachFilelist(filelist, parent) {
+      if (!filelist) return console.error(`Error :: ${filelist}`)
       for (let i = 0; i < filelist.length; ++i)
         config.mode.file === filelist[i].attrs.mode
           ? yield * this.req(filelist[i], parent) // 是文件
           : this.download(parent + '/' + filelist[i].filename) // 是目录
     },
     download(path = '') {
-      this.sftp.readdir(remoteBasePath + path, (err, list) => {
-        if (err) throw err
+      this.sftp.readdir(remotePath + path, (err, list) => {
+        if (err) {
+          try {
+            throw err
+          } catch (e) {
+            console.error(`${remotePath} \n ${path} \n ${list} \n ${err}`)
+          }
+        }
 
-        let promise = path === ''
+        path === ''
           ? (this.thread['main'] = this.eachFilelist(list, path)).next()
           : (this.thread[path] = this.eachFilelist(list, path)).next()
       })
     },
     downloadRedis() {
-      const localfile = `${localBasePath}${PATH.sep}redis.txt`
-      const remoteFile = `${remoteBasePath}/redis.txt`
+      const localfile = `${localPath}${PATH.sep}redis.txt`
+      const remoteFile = `${remotePath}/redis.txt`
 
       this.sftp.readFile(remoteFile, (err, data) => {
         if (err) throw err
@@ -214,7 +226,7 @@ export default {
             return value
           })
 
-        const key = this.timeEnd.split(' ')[0]
+        const key = this.dateEnd
         FS.ensureFile(localfile)
           .then(() => {
             FS.outputFile(localfile, tempObj[key], (err) => {
@@ -239,7 +251,10 @@ export default {
       }).connect(config.hostInfo)
     },
     init() {
-      localBasePath = PATH.resolve('F:\\统计数据\\' + this.timeBegin.split(' ')[0]) // 根据今天日期生成目录
+      const dateBegin = this.dateBegin
+      const dateEnd = this.dateEnd
+      const folderName = dateBegin === dateEnd ? dateBegin : (dateBegin + '~' + dateEnd)
+      localPath = PATH.resolve(localPath) + PATH.sep + folderName // 根据日期生成目录
 
       this.connectSFTP(() => {
         this.download()
